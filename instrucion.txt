@@ -1,0 +1,463 @@
+# Automated Manhwa Recap Video Generator - Complete Workflow
+
+## Project Overview
+Build a fully automated system that transforms manhwa chapters into professional recap videos with minimal human intervention.
+
+## Tech Stack (All Free Tools)
+- **Image Scraping**: Python + Selenium/BeautifulSoup4
+- **Script Generation**: Google AI Studio (Gemini API - Free tier)
+- **Voiceover**: Google AI Studio TTS or Edge-TTS (Microsoft Edge TTS - Free)
+- **Video Editing**: MoviePy (Python library) or FFmpegS
+- **Storage**: Local file system
+- **Upload**: YouTube Data API v3
+
+---
+
+## Detailed Workflow Steps
+
+### Step 1: Image Extraction (Web Scraping)
+**Input**: User provides manhwa chapter URL
+
+**Process**:
+1. User pastes the manhwa website URL into the app
+2. System identifies the website structure (common sites: Asura Scans, Reaper Scans, Flame Scans, etc.)
+3. Extract all chapter images using:
+   - **Selenium** (for dynamic websites with JavaScript)
+   - **BeautifulSoup4** (for static HTML parsing)
+4. Download images in sequence with proper naming (chapter_001.jpg, chapter_002.jpg, etc.)
+5. Store in temporary folder: `/temp/manhwa_name/chapter_X/images/`
+
+**Output**: Folder containing all chapter images in order
+
+**Code Requirements**:
+- Automatic website detection and parser selection
+- Handle different image formats (JPG, PNG, WebP)
+- Retry mechanism for failed downloads
+- Progress indicator for user
+
+---
+
+### Step 2: Script Generation (AI Analysis)
+**Input**: Extracted images from Step 1
+
+**Process**:
+1. Batch images (groups of 10-15 panels) to avoid token limits
+2. Send to **Gemini 2.0 Flash (via AI Studio API)** with this prompt structure:
+
+```
+You are a professional manhwa recap narrator. Analyze these manhwa panels and create an engaging, dramatic recap script.
+
+Instructions:
+- Describe the story events in chronological order
+- Use present tense and dramatic narration style
+- Include character emotions and key dialogue when visible
+- Keep each scene description concise (2-3 sentences)
+- Make it engaging for viewers who haven't read the chapter
+- Total script should be X minutes when spoken (adjust based on image count)
+
+[Images attached]
+
+Format your response as a continuous narration script, ready for text-to-speech.
+```
+
+3. Combine all batch scripts into one cohesive narrative
+4. Add intro/outro templates:
+   - Intro: "Welcome back to [Channel Name]! Today we're covering chapter X of [Manhwa Name]..."
+   - Outro: "That's all for today! Like and subscribe for more recaps!"
+
+**Output**: Complete narration script (TXT file)
+
+**API Details**:
+- Gemini 2.0 Flash is free up to 15 RPM (requests per minute)
+- Supports multimodal input (text + images)
+- Endpoint: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`
+
+---
+
+### Step 3: Voiceover Generation (Text-to-Speech)
+**Input**: Script from Step 2
+
+**Process**:
+Option A - **Edge-TTS (Recommended - Best Quality + Free)**:
+1. Use `edge-tts` Python library
+2. Select voice (e.g., "en-US-GuyNeural" for male, "en-US-JennyNeural" for female)
+3. Generate audio file with natural prosody
+4. Command: `edge-tts --voice "en-US-GuyNeural" --text "script.txt" --write-media "voiceover.mp3"`
+
+Option B - **Gemini AI Studio TTS**:
+1. Use Gemini's text-to-speech if available in API
+2. Fallback option if Edge-TTS has issues
+
+**Output**: `voiceover.mp3` audio file
+
+**Settings**:
+- Speech rate: 1.1x (slightly faster for engagement)
+- Audio format: MP3, 128kbps
+- Normalize audio levels
+
+---
+
+### Step 4: Video Editing (Automated Assembly)
+**Input**: Images + Voiceover
+
+**Process using MoviePy (Python)**:
+
+1. **Calculate timing**:
+   - Total voiceover duration = X seconds
+   - Number of images = Y
+   - Base time per image = X/Y seconds
+   - Adjust individual timings based on script segments
+
+2. **Create video clips**:
+```python
+from moviepy.editor import *
+
+# Load images
+clips = []
+for img in image_list:
+    clip = ImageClip(img).set_duration(calculated_duration)
+    clip = clip.resize(height=1080)  # 1080p
+    clips.append(clip)
+
+# Add transitions (optional)
+clips_with_transitions = [clip.crossfadein(0.3) for clip in clips]
+```
+
+3. **Add effects**:
+   - Ken Burns effect (slow zoom/pan on still images)
+   - Fade transitions between images
+   - Add text overlays for chapter title/episode number
+
+4. **Combine elements**:
+```python
+# Concatenate images
+video = concatenate_videoclips(clips_with_transitions)
+
+# Add voiceover
+audio = AudioFileClip("voiceover.mp3")
+video = video.set_audio(audio)
+
+# Add background music (optional, low volume)
+bgm = AudioFileClip("background_music.mp3").volumex(0.1)
+final_audio = CompositeAudioClip([audio, bgm])
+video = video.set_audio(final_audio)
+```
+
+5. **Add intro/outro**:
+   - Pre-made 5-second intro template
+   - 3-second outro with subscribe animation
+
+**Output**: `final_video.mp4` (1080p, 30fps)
+
+**Editing Features to Include**:
+- Auto-crop black borders from manhwa panels
+- Smart framing (detect important parts of panel)
+- Text overlays for character names (optional)
+- Chapter/episode counter in corner
+- Thumbnail generation (auto-select most dramatic panel)
+
+**Alternative Simple Tool**: 
+- **FFmpeg** (command-line, faster but less flexible)
+- Good for basic slideshow creation
+
+---
+
+### Step 5: Rendering & Upload
+**Input**: Final video file
+
+**Process**:
+
+**5A. Rendering Optimization**:
+1. Use hardware acceleration if available (GPU)
+2. Output settings:
+   - Resolution: 1920x1080 (1080p)
+   - Frame rate: 30fps
+   - Codec: H.264
+   - Bitrate: 8-10 Mbps (good quality, reasonable file size)
+3. Generate thumbnail (auto-extract most dramatic frame + add text overlay)
+
+**5B. YouTube Upload (via API)**:
+1. Authenticate with YouTube Data API v3 (OAuth 2.0)
+2. Auto-fill metadata:
+   - Title: "[Manhwa Name] Chapter X Recap - [Brief Hook]"
+   - Description: Template with chapter summary, tags, links
+   - Tags: manhwa, recap, [manhwa name], chapter X, etc.
+   - Category: Entertainment (24)
+   - Thumbnail: Upload generated thumbnail
+3. Schedule or publish immediately
+4. Add to playlist (organize by manhwa series)
+
+**Output**: Published YouTube video + link
+
+---
+
+## App Interface (For Antigravity to Build)
+
+### Main Dashboard
+```
+┌─────────────────────────────────────────┐
+│  Manhwa Recap Video Generator           │
+├─────────────────────────────────────────┤
+│                                          │
+│  [1] New Recap Project                   │
+│                                          │
+│  Recent Projects:                        │
+│  - Solo Leveling Ch. 150 ✓              │
+│  - ORV Ch. 89 (Processing...)           │
+│  - Lookism Ch. 500 ✓                    │
+│                                          │
+│  [Settings] [API Keys] [Templates]       │
+└─────────────────────────────────────────┘
+```
+
+### New Project Workflow
+```
+Step 1: Input
+┌─────────────────────────────────────────┐
+│ Manhwa Chapter URL:                      │
+│ [_________________________________]      │
+│                                          │
+│ Manhwa Name: [Auto-detect] or [Manual]  │
+│ Chapter Number: [Auto-detect]           │
+│                                          │
+│ [Scrape Images] ────────────────────────▶│
+└─────────────────────────────────────────┘
+
+Step 2: Preview & Adjust
+┌─────────────────────────────────────────┐
+│ ✓ 45 images extracted                   │
+│ [Image Gallery Preview]                  │
+│                                          │
+│ Remove unwanted panels: [Select images] │
+│                                          │
+│ [Generate Script] ──────────────────────▶│
+└─────────────────────────────────────────┘
+
+Step 3: Script Review
+┌─────────────────────────────────────────┐
+│ Generated Script:                        │
+│ [Text editor with script]                │
+│                                          │
+│ Edit if needed (optional)                │
+│ Voice: [Male ▼] [Female] [Custom]       │
+│                                          │
+│ [Generate Voiceover] ────────────────────▶│
+└─────────────────────────────────────────┘
+
+Step 4: Video Settings
+┌─────────────────────────────────────────┐
+│ ♪ Preview Voiceover [▶]                 │
+│                                          │
+│ Background Music: [None ▼]              │
+│ Transitions: [Crossfade ▼]              │
+│ Effects: [✓] Ken Burns  [✓] Auto-crop   │
+│                                          │
+│ [Create Video] ──────────────────────────▶│
+└─────────────────────────────────────────┘
+
+Step 5: Export
+┌─────────────────────────────────────────┐
+│ Video rendering... 78% ████████░░        │
+│ Estimated time: 2 min                    │
+│                                          │
+│ After rendering:                         │
+│ [✓] Upload to YouTube                   │
+│ [✓] Generate thumbnail                  │
+│                                          │
+│ YouTube Title:                           │
+│ [_________________________________]      │
+│                                          │
+│ [Render & Upload] ───────────────────────▶│
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Required API Keys & Setup
+
+### 1. Google AI Studio (Gemini)
+- Get API key: https://aistudio.google.com/apikey
+- Free tier: 15 requests/minute
+- Store in app settings securely
+
+### 2. YouTube Data API
+- Create project in Google Cloud Console
+- Enable YouTube Data API v3
+- Create OAuth 2.0 credentials
+- Free quota: 10,000 units/day (enough for ~6 uploads/day)
+
+### 3. Edge-TTS
+- No API key needed
+- Install via pip: `pip install edge-tts`
+- Completely free, unlimited usage
+
+---
+
+## File Structure
+```
+manhwa-recap-generator/
+│
+├── app/
+│   ├── main.py (FastAPI or Flask backend)
+│   ├── scraper.py (web scraping logic)
+│   ├── script_generator.py (Gemini API integration)
+│   ├── tts_generator.py (Edge-TTS integration)
+│   ├── video_editor.py (MoviePy automation)
+│   └── youtube_uploader.py (YouTube API)
+│
+├── frontend/
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
+│
+├── templates/
+│   ├── intro_template.mp4
+│   ├── outro_template.mp4
+│   └── background_music/ (royalty-free tracks)
+│
+├── temp/ (temporary storage for processing)
+│
+└── config/
+    ├── settings.json
+    └── api_keys.json (encrypted)
+```
+
+---
+
+## Automation Features to Implement
+
+### Level 1: Semi-Automated
+- User provides URL
+- System handles everything else
+- User reviews script before video generation
+
+### Level 2: Fully Automated (Target)
+- User provides URL only
+- System auto-generates and uploads
+- User gets notification when video is live
+- Batch processing: User can queue 10 chapters, walk away
+
+### Advanced Features (Optional)
+- **Schedule uploads**: Automatically post at optimal times
+- **Multi-chapter support**: Process entire manhwa volumes
+- **A/B testing**: Generate multiple versions with different voices/styles
+- **Analytics dashboard**: Track video performance
+- **Template library**: Save custom intro/outro/style presets
+
+---
+
+## Error Handling
+
+### Critical Checkpoints:
+1. **Scraping fails**: Retry 3x, then alert user with error details
+2. **Script generation fails**: Save images, allow manual retry
+3. **TTS fails**: Fallback to alternative voice service
+4. **Video rendering fails**: Save progress, allow resume
+5. **Upload fails**: Save video locally, retry later
+
+### Logging:
+- Save detailed logs for each project
+- Include timestamps, errors, API responses
+- Allow user to download logs for troubleshooting
+
+---
+
+## Performance Optimization
+
+### Speed Improvements:
+- **Parallel processing**: Scrape images while generating script for previous batch
+- **Caching**: Store frequently used intro/outro videos
+- **GPU acceleration**: Use CUDA for video rendering if available
+- **Batch API calls**: Send multiple images to Gemini in one request
+
+### Estimated Processing Time:
+- Image scraping: 1-3 minutes (depends on chapter length)
+- Script generation: 30-60 seconds
+- Voiceover: 20-40 seconds
+- Video editing: 3-5 minutes
+- Upload: 2-10 minutes (depends on file size)
+
+**Total: ~10-20 minutes per chapter** (fully automated)
+
+---
+
+## Cost Analysis (All Free!)
+
+| Component | Service | Cost |
+|-----------|---------|------|
+| Script Generation | Gemini 2.0 Flash | Free (15 RPM limit) |
+| TTS | Edge-TTS | Free (unlimited) |
+| Video Editing | MoviePy/FFmpeg | Free (open source) |
+| Hosting | YouTube | Free |
+| API Calls | YouTube Data API | Free (10K units/day) |
+
+**Total monthly cost: $0** ✅
+
+---
+
+## Legal & Ethical Considerations
+
+### Copyright Notice:
+- Always credit original manhwa source
+- Add disclaimer: "This is a recap for educational/entertainment purposes"
+- Link to official reading platforms
+- Use transformative commentary (not just reading panels)
+
+### Recommended Disclaimer Template:
+```
+"This video is a recap/summary of [Manhwa Name] Chapter [X]. 
+All rights belong to the original creator and publisher. 
+Please support the official release at [link].
+This recap is for entertainment and educational purposes under fair use."
+```
+
+---
+
+## Testing Checklist
+
+Before deployment, test:
+- [ ] Scraping from 5+ different manhwa websites
+- [ ] Script generation with various art styles
+- [ ] TTS with different voice options
+- [ ] Video rendering at different chapter lengths
+- [ ] YouTube upload with proper metadata
+- [ ] Error handling for each failure point
+- [ ] Full automation: URL input → Published video
+- [ ] Batch processing (3+ chapters in queue)
+
+---
+
+## Future Enhancements
+
+1. **AI Voice Cloning**: Custom narrator voice
+2. **Multi-language support**: Auto-translate scripts
+3. **Community features**: Share templates, vote on best recaps
+4. **Monetization helper**: Auto-optimize for YouTube algorithm
+5. **Mobile app**: Control automation from phone
+6. **Discord bot**: Drop links in Discord, bot auto-publishes
+
+---
+
+## Summary for Antigravity
+
+Build a web application with these core functions:
+
+**Backend (Python)**:
+- `scrape_images(url)` → downloads chapter images
+- `generate_script(images)` → uses Gemini API to create narration
+- `create_voiceover(script)` → uses Edge-TTS to generate audio
+- `edit_video(images, audio)` → uses MoviePy to combine everything
+- `upload_youtube(video, metadata)` → publishes to YouTube
+
+**Frontend (React/Vue)**:
+- Simple form for URL input
+- Progress tracker for each step
+- Preview windows for script/audio/video
+- Settings panel for API keys and preferences
+
+**Automation Engine**:
+- Queue system for batch processing
+- Background workers for long tasks
+- Notification system when videos are ready
+
+**Start with MVP**: Get the basic flow working (URL → Video file), then add YouTube upload and polish.

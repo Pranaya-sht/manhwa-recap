@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.ipynb_checkpoints/
+*.mp4
+*.mkv
+*.avi
+temp/
+downloads/
+recap_videos/
+images/
+*.log

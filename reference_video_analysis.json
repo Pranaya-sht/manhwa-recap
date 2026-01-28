@@ -1,0 +1,17 @@
+{
+  "video": {
+    "duration": 2191.06,
+    "fps": 30.0,
+    "size": [
+      640,
+      360
+    ],
+    "aspect_ratio": "640:360",
+    "total_frames": 65731
+  },
+  "audio": {
+    "fps": 44100,
+    "nchannels": 2,
+    "duration": 2191.06
+  }
+}

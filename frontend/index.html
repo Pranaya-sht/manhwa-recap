@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manhwa Recap Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <h1>Manhwa Recap<span class="accent">Generator</span></h1>
+            </div>
+            <nav class="nav">
+                <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+                <button class="nav-btn" data-view="settings">Settings</button>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view active">
+                <!-- New Project Card -->
+                <section class="card new-project-card">
+                    <div class="card-header">
+                        <h2>✨ Create New Recap</h2>
+                        <p class="subtitle">Paste your manhwa chapter URL to get started</p>
+                    </div>
+                    <div class="card-content">
+                        <div class="input-group">
+                            <input type="text" id="url-input" placeholder="https://asurascans.com/manga/solo-leveling/chapter-150/" class="url-input">
+                            <button id="start-btn" class="btn btn-primary">
+                                <span class="btn-icon">🚀</span>
+                                Start Processing
+                            </button>
+                        </div>
+                        <div class="mode-toggle">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="auto-mode" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Full Automation Mode</span>
+                            </label>
+                            <p class="toggle-hint">When enabled, generates video automatically without review steps</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Progress Section (Hidden by default) -->
+                <section id="progress-section" class="card progress-card hidden">
+                    <div class="card-header">
+                        <h2>⚡ Processing</h2>
+                        <span id="project-title" class="project-title"></span>
+                    </div>
+                    <div class="card-content">
+                        <div class="steps-container">
+                            <!-- Step 1: Scraping -->
+                            <div class="step" id="step-scrape">
+                                <div class="step-indicator">
+                                    <div class="step-icon">📥</div>
+                                    <div class="step-line"></div>
+                                </div>
+                                <div class="step-content">
+                                    <h3>Extracting Images</h3>
+                                    <p class="step-desc">Downloading manhwa panels from source</p>
+                                    <div class="step-status">
+                                        <span class="status-badge waiting">Waiting</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Script -->
+                            <div class="step" id="step-script">
+                                <div class="step-indicator">
+                                    <div class="step-icon">✍️</div>
+                                    <div class="step-line"></div>
+                                </div>
+                                <div class="step-content">
+                                    <h3>Generating Script</h3>
+                                    <p class="step-desc">AI analyzing panels and creating narration</p>
+                                    <div class="step-status">
+                                        <span class="status-badge waiting">Waiting</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Voiceover -->
+                            <div class="step" id="step-voice">
+                                <div class="step-indicator">
+                                    <div class="step-icon">🎙️</div>
+                                    <div class="step-line"></div>
+                                </div>
+                                <div class="step-content">
+                                    <h3>Creating Voiceover</h3>
+                                    <p class="step-desc">Converting script to natural speech</p>
+                                    <div class="step-status">
+                                        <span class="status-badge waiting">Waiting</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Video -->
+                            <div class="step" id="step-video">
+                                <div class="step-indicator">
+                                    <div class="step-icon">🎬</div>
+                                </div>
+                                <div class="step-content">
+                                    <h3>Rendering Video</h3>
+                                    <p class="step-desc">Assembling final recap video</p>
+                                    <div class="step-status">
+                                        <span class="status-badge waiting">Waiting</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="overall-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-text" id="progress-text">0%</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Script Review Section (Hidden by default) -->
+                <section id="script-section" class="card script-card hidden">
+                    <div class="card-header">
+                        <h2>📝 Review Script</h2>
+                        <div class="script-stats">
+                            <span id="word-count">0 words</span>
+                            <span id="duration-estimate">~0 min</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <textarea id="script-editor" class="script-editor" placeholder="Script will appear here..."></textarea>
+                        <div class="script-actions">
+                            <div class="voice-select">
+                                <label>Voice:</label>
+                                <select id="voice-select">
+                                    <option value="en-US-GuyNeural">Guy (Male, US)</option>
+                                    <option value="en-US-ChristopherNeural">Christopher (Male, US)</option>
+                                    <option value="en-GB-RyanNeural">Ryan (Male, UK)</option>
+                                    <option value="en-US-JennyNeural">Jenny (Female, US)</option>
+                                    <option value="en-US-AriaNeural">Aria (Female, US)</option>
+                                    <option value="en-GB-SoniaNeural">Sonia (Female, UK)</option>
+                                </select>
+                            </div>
+                            <button id="generate-voice-btn" class="btn btn-secondary">
+                                <span class="btn-icon">🎙️</span>
+                                Generate Voiceover
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Result Section (Hidden by default) -->
+                <section id="result-section" class="card result-card hidden">
+                    <div class="card-header">
+                        <h2>🎉 Video Ready!</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="result-preview">
+                            <div class="video-preview">
+                                <video id="video-preview" controls></video>
+                            </div>
+                            <div class="result-info">
+                                <div class="info-item">
+                                    <span class="info-label">Title</span>
+                                    <span class="info-value" id="result-title">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Duration</span>
+                                    <span class="info-value" id="result-duration">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">File Size</span>
+                                    <span class="info-value" id="result-size">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="result-actions">
+                            <button id="download-btn" class="btn btn-primary">
+                                <span class="btn-icon">📥</span>
+                                Download Video
+                            </button>
+                            <button id="new-project-btn" class="btn btn-secondary">
+                                <span class="btn-icon">➕</span>
+                                New Project
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Projects -->
+                <section class="card recent-projects-card">
+                    <div class="card-header">
+                        <h2>📂 Recent Projects</h2>
+                        <button id="refresh-projects-btn" class="btn-icon-only">🔄</button>
+                    </div>
+                    <div class="card-content">
+                        <div id="projects-list" class="projects-list">
+                            <div class="empty-state">
+                                <span class="empty-icon">📭</span>
+                                <p>No projects yet. Create one above!</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view">
+                <section class="card settings-card">
+                    <div class="card-header">
+                        <h2>⚙️ Settings</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="settings-group">
+                            <h3>API Configuration</h3>
+                            <div class="setting-item">
+                                <label for="gemini-key">Gemini API Key</label>
+                                <input type="password" id="gemini-key" placeholder="Enter your Gemini API key">
+                                <p class="setting-hint">Get your free key from <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a></p>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3>Default Settings</h3>
+                            <div class="setting-item">
+                                <label for="default-voice">Default Voice</label>
+                                <select id="default-voice">
+                                    <option value="en-US-GuyNeural">Guy (Male, US)</option>
+                                    <option value="en-US-ChristopherNeural">Christopher (Male, US)</option>
+                                    <option value="en-US-JennyNeural">Jenny (Female, US)</option>
+                                    <option value="en-US-AriaNeural">Aria (Female, US)</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label for="speech-rate">Speech Rate</label>
+                                <input type="range" id="speech-rate" min="0.8" max="1.5" step="0.1" value="1.0">
+                                <span id="speech-rate-value">1.0x</span>
+                            </div>
+                            <div class="setting-item">
+                                <label for="channel-name">Channel Name</label>
+                                <input type="text" id="channel-name" placeholder="My Manhwa Recaps">
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3>Video Settings</h3>
+                            <div class="setting-item checkbox">
+                                <label>
+                                    <input type="checkbox" id="ken-burns" checked>
+                                    Enable Ken Burns Effect
+                                </label>
+                            </div>
+                            <div class="setting-item checkbox">
+                                <label>
+                                    <input type="checkbox" id="auto-crop" checked>
+                                    Auto-crop Black Borders
+                                </label>
+                            </div>
+                        </div>
+
+                        <button id="save-settings-btn" class="btn btn-primary">
+                            <span class="btn-icon">💾</span>
+                            Save Settings
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Made with ❤️ for Manhwa Fans • <a href="https://github.com" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
